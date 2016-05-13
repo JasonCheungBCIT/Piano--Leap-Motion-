@@ -46,6 +46,9 @@ public class PianoKey : MonoBehaviour {
 		
 	/* Collision style - Allows volume control but much more laggy */
 	void OnCollisionEnter(Collision collision) {
+		if (!collision.transform.CompareTag ("Hand"))
+			return;
+
 		Debug.Log ("Collision enter");
 
 		if (collided.Count == 0) {
@@ -56,11 +59,16 @@ public class PianoKey : MonoBehaviour {
 	}
 		
 	void OnCollisionStay(Collision collision) {
-
+		if (!collision.transform.CompareTag ("Hand"))
+			return;
 	}
 	
 	void OnCollisionExit(Collision collision) {
+		if (!collision.transform.CompareTag ("Hand"))
+			return;
+		
 		Debug.Log ("Collision detected");
+
 		collided.Remove (collision.transform);
 		if (collided.Count == 0) {
 			transform.position = new Vector3 (
