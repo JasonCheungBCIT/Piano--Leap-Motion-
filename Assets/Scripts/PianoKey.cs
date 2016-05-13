@@ -5,12 +5,11 @@ using System.Collections.Generic;
 public class PianoKey : MonoBehaviour {
 
 	private float minimumDown = 0.5f;
-	private List<Transform> collided;
 	private Vector3 originalPosition;
+	private Transform lowestBone;
 
 	// Use this for initialization
 	void Start () {
-		collided = new List<Transform> ();
 		originalPosition = transform.position;
 	}
 	
@@ -18,19 +17,13 @@ public class PianoKey : MonoBehaviour {
 	void Update () {
 
 		// Check if key is being touched
-		if (collided.Count != 0) {
-
-			// Find the lowest position
-			float lowestPosition = collided[0].position.y;
-			foreach (Transform t in collided) {
-				if (t.position.y < transform.position.y) {
-					lowestPosition = t.position.y;
-				}
-			}
+		if (lowestBone != null) {
+			float lowestPosition = lowestBone.position.y;
 
 			// Lower bound 
 			if (lowestPosition < (originalPosition.y - transform.localScale.y))
 				lowestPosition = originalPosition.y - transform.localScale.y;
+			
 			// Upper bound 
 			else if (lowestPosition > originalPosition.y)
 				lowestPosition = originalPosition.y;
@@ -42,9 +35,10 @@ public class PianoKey : MonoBehaviour {
 				transform.position.z
 			);
 		}
+
 	}
 		
-	/* Collision style - Allows volume control but much more laggy */
+	/* Collision style - Allows volume control but much more laggy 
 	void OnCollisionEnter(Collision collision) {
 		if (!collision.transform.CompareTag ("Hand"))
 			return;
@@ -78,26 +72,44 @@ public class PianoKey : MonoBehaviour {
 			);
 		}
 	}
+	*/
 
-	/* Trigger style - No volume control but less laggy 
+	/* Trigger style - supports volume control */
 	void OnTriggerEnter(Collider other) {
+		if (!other.transform.CompareTag ("Hand"))
+			return;
+
 		Debug.Log ("Trigger enter");
 
-		if (collided.Count == 0) 
-			GetComponent<AudioSource> ().Play ();	// Play audio if nothing was touching this key yet 
-		
-		collided.Add (other.transform);
+		// Nothing is touching the key yet 
+		if (lowestBone == null) {
+			GetComponent<AudioSource>().volume = other.GetComponent<Rigidbody>().velocity.magnitude / 25;	// range 0 to 1 
+			GetComponent<AudioSource> ().Play ();	
+			lowestBone = transform;
+		}
 	}
 
 
 	void OnTriggerStay(Collider other) {
+		if (!other.transform.CompareTag ("Hand"))
+			return;
+
 		// Debug.Log ("Trigger stay"); // causes lag
+
+		// Update the lowest bone  
+		if (transform.position.y < lowestBone.position.y)
+			lowestBone = transform;
 	}
 
 	void OnTriggerExit(Collider other) {
+		if (!other.transform.CompareTag ("Hand"))
+			return;
+		
 		Debug.Log ("Trigger exit");
 
-		collided.Remove (other.transform);
+		// Remove the finger (if it's the last one touching)
+		if (lowestBone == other.transform)
+			lowestBone = null;
 	}
-	*/
+
 }
