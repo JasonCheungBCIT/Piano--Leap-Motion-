@@ -6,7 +6,10 @@ public class Calibrator : MonoBehaviour {
 
 	public GameObject leapMotionController;
     public TextFader  fadableText;
-    public Transform[] bones;
+    // public Transform[] bones;
+	public Transform leftHand, rightHand;
+	public LerpToPosition piano;
+	public float holdTime = 4.0f;
 
 	private static string INSTRUC_1 = "place the leap motion controller on its side";
 	private static string INSTRUC_2 = "rest your hands on the table";
@@ -16,6 +19,8 @@ public class Calibrator : MonoBehaviour {
     private Vector3[] lastTipPosition;          // [n] corresponds to the bones[n] 
     private bool handsResting = false;
 	private bool checkingForRest = false;
+	private float timeRested = 0.0f;
+	private Vector3 lastLeftPos, lastRightPos;
 
     // Use this for initialization
 	void Start () {
@@ -25,45 +30,56 @@ public class Calibrator : MonoBehaviour {
 	// Update is called once per frame
 	void Update () {
 
-		if (checkingForRest) {
-			// checking for resting hands 
-			handsResting = false;
-			for (int i = 0; i < bones.Length; ++i) {
-				if (Vector3.Distance (bones [i].position, lastTipPosition [i]) < FINGER_TIP_BUFFER) {
-					// resting
-					lastTipPosition [i] = bones [i].position;
-				} else {
-					// not resting 
-					handsResting = false;
-					break; 
-				}
-			}
-
+		// Note: checking directly doesn't work, as only the parent is enabled/disabled 
+		if (checkingForRest && leftHand.parent.gameObject.activeSelf) {	
 			// Calibrated! show final test and disable
-			if (handsResting) {
-				fadableText.hideText ();
-				fadableText.fadeTextInAndOut (INSTRUC_3, 4f);
-				this.gameObject.SetActive (false);
+			if (isHandsResting()) {
+				Debug.Log ("Hands are resting!");
+				StartCoroutine (PlayFinalAnimation ());
 			}
 		}
+			
 	}
 
     public IEnumerator PlayInitialAnimation()
     {
-		// TODO: darn, had to use the helpers directly
-		Debug.Log("Waiting");
         yield return new WaitForSeconds(2f);							// short delay before animation starts 
-		Debug.Log("moving controller and fading text");
-		leapMotionController.GetComponent<Animator> ().enabled = true; 	// hack play animation
-		fadableText.setText(INSTRUC_1);									
-		yield return fadableText.fadeTextInAndOutHelper (6);
 
-		Debug.Log("showing text");
-		fadableText.showText (INSTRUC_2);	
-		yield return null;
+		leapMotionController.GetComponent<Animator> ().enabled = true; 	// hack play animation
+		yield return fadableText.fadeTextInAndOut (INSTRUC_1, 6);
+
+		yield return fadableText.showText (INSTRUC_2);	
 
 		checkingForRest = true;
-		yield return null;
+	}
+
+	public IEnumerator PlayFinalAnimation() {
+		piano.begin (new Vector3 (
+			0,
+			lastLeftPos.y + lastRightPos.y / 2,	// average 
+			lastLeftPos.z + lastRightPos.z / 2	// average
+		));
+		yield return fadableText.hideText ();
+		yield return fadableText.fadeTextInAndOut (INSTRUC_3, 4f);
+		this.gameObject.SetActive (false);
+	}
+
+	private bool isHandsResting() {
+		if (!leftHand.gameObject.activeSelf || !rightHand.gameObject.activeSelf)
+			return false;
+
+		if (Vector3.Distance (lastLeftPos, leftHand.position) < FINGER_TIP_BUFFER
+		    && Vector3.Distance (lastRightPos, rightHand.position) < FINGER_TIP_BUFFER
+			&& Mathf.Abs(leftHand.position.y - rightHand.position.y) < FINGER_TIP_BUFFER) 
+		{
+			timeRested += Time.deltaTime;
+			return (timeRested > holdTime);
+		} else {
+			lastLeftPos = leftHand.position;
+			lastRightPos = rightHand.position;
+			timeRested = 0;
+			return false;
+		}
 	}
 
 }

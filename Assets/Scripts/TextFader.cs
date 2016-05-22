@@ -18,30 +18,38 @@ public class TextFader : MonoBehaviour {
 		display.text = text;
 	}
 
-	public void showText() {
+	/* Convenience methods */
+	public IEnumerator showText() {
 		StartCoroutine(opacityHelper(1));
+		yield return new WaitForSeconds (animationDuration);
 	}
-	public void showText(string text) {
+	public IEnumerator showText(string text) {
 		display.text = text;
 		StartCoroutine(opacityHelper(1));
+		yield return new WaitForSeconds (animationDuration);
 	}
 
-	public void hideText() {
+	public IEnumerator hideText() {
 		StartCoroutine(opacityHelper(0));
+		yield return new WaitForSeconds (animationDuration);
 	}
 		
-	public void fadeTextInAndOut() {
+	public IEnumerator fadeTextInAndOut() {
 		StartCoroutine(fadeTextInAndOutHelper());
+		yield return new WaitForSeconds (3 * animationDuration);	// in, hold, out (x3)
 	}
-	public void fadeTextInAndOut(string text) {
+	public IEnumerator fadeTextInAndOut(string text) {
 		display.text = text;
 		StartCoroutine(fadeTextInAndOutHelper());
+		yield return new WaitForSeconds (3 * animationDuration);	// in, hold, out (x3)
 	}
-	public void fadeTextInAndOut(string text, float duration) {
+	public IEnumerator fadeTextInAndOut(string text, float duration) {
 		display.text = text;
 		StartCoroutine(fadeTextInAndOutHelper(duration));
+		yield return new WaitForSeconds (2 * animationDuration + duration);	// in, hold, out (x3)
 	}
 
+	/* HELPERS */
 	// Helps the text fade in and out 
 	public IEnumerator fadeTextInAndOutHelper(float duration = DEFAULT_DURATION) {
 		yield return StartCoroutine(opacityHelper(1));	// fade in
